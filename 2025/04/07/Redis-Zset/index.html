@@ -46,25 +46,41 @@
 <li><strong>列表结束标识符</strong>：特殊值0xFF（十进制为255），表示压缩列表的结束</li>
 </ul>
 <p>压缩列表结构：<br>![Pasted image 20250407114040](Redis-Zset.assets&#x2F;Pasted image 20250407114040-1743997781335-1.png)</p>
+<img src="Redis-Zset.assets/Pasted image 20250407114040-1743997781335-1.png" />
+
 <ul>
 <li>如果查找定位第一个元素和最后一个元素：时间复杂度为 <code>O(1)</code> - 通过表头三个字段直接定位</li>
 <li>查找其他元素只能逐个查找：时间复杂度为 <code>O(n)</code></li>
 </ul>
 <h1 id="为什么用跳表？"><a href="#为什么用跳表？" class="headerlink" title="为什么用跳表？"></a>为什么用跳表？</h1><p>跳表是在<strong>有序链表</strong>的基础上进化而来的，它结合了：</p>
 <ol>
-<li><strong>链表</strong>在内存空间中不需要一块连续的区域</li>
-<li><strong>有序数组</strong>的高效的查找算法：二分查找<br> 两个优点。具体来说，<em>跳表在链表的基础上，增加了多级索引，通过索引位置的几个跳转，实现了数据的快速定位。</em> 如下：<br> <img src="/Redis-Zset.assets/NeatReader-1743990195139.png" alt="NeatReader-1743990195139"></li>
+<li><p><strong>链表</strong>在内存空间中不需要一块连续的区域</p>
+</li>
+<li><p><strong>有序数组</strong>的高效的查找算法：二分查找</p>
+</li>
 </ol>
+<p>  两个优点。具体来说，<em>跳表在链表的基础上，增加了多级索引，通过索引位置的几个跳转，实现了数据的快速定位。</em> 如下：<br>  <img src="/Redis-Zset.assets/NeatReader-1743990195139.png" alt="NeatReader-1743990195139"></p>
+  <img src="Redis-Zset.assets/NeatReader-1743990195139.png" />
+
 <ul>
 <li>跳表在链表的基础上增加了多级索引以提升查找的效率，其实是一个<strong>空间换时间</strong>的方案，必然会带来一个问题：索引是占内存的</li>
 <li>原始链表中存储的有可能是很大的对象，而索引结点只需要存储关键值和几个指针，并不需要存储对象，因此当节点本身比较大或者元素数量比较多的时候，其优势必然会被放大，而缺点则可以忽略</li>
 </ul>
-<h1 id="跳表的具体实现"><a href="#跳表的具体实现" class="headerlink" title="跳表的具体实现"></a>跳表的具体实现</h1><h2 id="1、普通的有序单向链表"><a href="#1、普通的有序单向链表" class="headerlink" title="1、普通的有序单向链表"></a>1、普通的有序单向链表</h2><p>![Pasted image 20250407094915](Redis-Zset.assets&#x2F;Pasted image 20250407094915.png)<br>如果我们需要查找节点33，需要从头节点开始一个个遍历，遍历6次，时间复杂度为 <code>O(n)</code></p>
+<h1 id="跳表的具体实现"><a href="#跳表的具体实现" class="headerlink" title="跳表的具体实现"></a>跳表的具体实现</h1><h2 id="1、普通的有序单向链表"><a href="#1、普通的有序单向链表" class="headerlink" title="1、普通的有序单向链表"></a>1、普通的有序单向链表</h2><p>![Pasted image 20250407094915](Redis-Zset.assets&#x2F;Pasted image 20250407094915.png)</p>
+<img src="Redis-Zset.assets/Pasted image 20250407094915.png" />
+
+<p>如果我们需要查找节点33，需要从头节点开始一个个遍历，遍历6次，时间复杂度为 <code>O(n)</code></p>
 <h2 id="2、优化"><a href="#2、优化" class="headerlink" title="2、优化"></a>2、优化</h2><p>我们在以上的有序单向链表的上一层，再添加一个一级索引：<br>![Pasted image 20250407095240](Redis-Zset.assets&#x2F;Pasted image 20250407095240.png)</p>
+<img src="Redis-Zset.assets/Pasted image 20250407095240.png" />
+
+
+
 <ul>
 <li>查找节点33，遍历顺序为：<code>1 -&gt; 11 -&gt; 27 -&gt; 33</code>，一共遍历4次</li>
 </ul>
 <p>如果再向上添加一级索引：<br>![Pasted image 20250407095612](Redis-Zset.assets&#x2F;Pasted image 20250407095612.png)</p>
+<img src="Redis-Zset.assets/Pasted image 20250407095612.png" />
+
 <ul>
 <li>查找节点33，遍历顺序为：<code>1 -&gt; 27 -&gt; 33</code>，只需要遍历3次</li>
 </ul>
