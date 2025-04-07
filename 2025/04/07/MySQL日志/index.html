@@ -190,7 +190,7 @@
 </ul>
 <h2 id="4、主从复制"><a href="#4、主从复制" class="headerlink" title="4、主从复制"></a>4、主从复制</h2><p>MySQL的主从复制依赖于bin log，也就是<strong>记录MySQL上的所有变化</strong>并<strong>以二进制形式保存在磁盘</strong>上。</p>
 <p>复制过程：将binlog中的数据从主库传输到从库（异步操作）</p>
-<p><img src="/MySQL%E6%97%A5%E5%BF%97/image-20250407190151841.png" alt="image-20250407190151841"></p>
+<p><img src="/2025/04/07/Redis-Zset/ge-20250407190151841.png" alt="image-20250407190151841"></p>
 <p>MySQL集群的主从复制过程梳理成3个阶段：</p>
 <ol>
 <li>写入Bin log：主库写bin log日志，提交事务，并更新本地存储数据</li>
