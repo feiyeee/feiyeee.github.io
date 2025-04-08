@@ -1,35 +1,288 @@
+
+
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="renderer" content="webkit">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>
-        chenchen
-    </title>
-    
-<link rel="stylesheet" href="/libs/highlight/styles/monokai-sublime.css">
+  <meta charset="UTF-8">
 
-    
-<link rel="stylesheet" href="/libs/font-awesome/css/font-awesome.min.css">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/Blog.png">
+  <link rel="icon" href="/img/Blog.png">
+  
 
-    
-<link rel="stylesheet" href="/css/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="尘尘">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="本文主要介绍 Redis Zset 的底层数据结构实现即原理。  zset底层在数据少的时候是压缩列表，数据量多了会进化成跳表。 什么时候用压缩列表，什么时候用跳表？压缩列表使用要求：  有序集合保存的元素数量小于128个 有序集合保存的所有元素长度小于64字节  如果不满足以上两个条件之一，则进化成跳表  压缩列表压缩列表底层就是有序数组 + 标识符，标识符包括：列表长度、尾部偏移量、列表元素">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis-Zset">
+<meta property="og:url" content="http://example.com/2025/04/07/Redis-Zset/index.html">
+<meta property="og:site_name" content="chenchen">
+<meta property="og:description" content="本文主要介绍 Redis Zset 的底层数据结构实现即原理。  zset底层在数据少的时候是压缩列表，数据量多了会进化成跳表。 什么时候用压缩列表，什么时候用跳表？压缩列表使用要求：  有序集合保存的元素数量小于128个 有序集合保存的所有元素长度小于64字节  如果不满足以上两个条件之一，则进化成跳表  压缩列表压缩列表底层就是有序数组 + 标识符，标识符包括：列表长度、尾部偏移量、列表元素">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2025/04/07/Redis-Zset/1.png">
+<meta property="og:image" content="http://example.com/2025/04/07/Redis-Zset/NeatReader-1743990195139.png">
+<meta property="og:image" content="http://example.com/2025/04/07/Redis-Zset/20250407094915.png">
+<meta property="og:image" content="http://example.com/2025/04/07/Redis-Zset/20250407095240.png">
+<meta property="og:image" content="http://example.com/2025/04/07/Redis-Zset/20250407095612.png">
+<meta property="article:published_time" content="2025-04-07T04:03:44.000Z">
+<meta property="article:modified_time" content="2025-04-08T09:16:08.971Z">
+<meta property="article:author" content="尘尘">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/2025/04/07/Redis-Zset/1.png">
+  
+  
+  
+  <title>Redis-Zset - chenchen</title>
 
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
 <meta name="generator" content="Hexo 7.3.0"></head>
 
-<body id="bodyx">
-    <div class="hd posts">
-    <a href="/index.html"><i class="fa fa-reply replay-btn" aria-hidden="true"></i></a>
-    <div class="post-title">
-        <p>
-            Redis-Zset
-        </p>
-        <hr>
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Haibara_Ai</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
     </div>
-    <div class="post-content">
-        <blockquote>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Redis-Zset"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-04-07 12:03" pubdate>
+          2025年4月7日 中午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          1.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          12 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Redis-Zset</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <blockquote>
 <p>本文主要介绍 Redis Zset 的底层数据结构实现即原理。</p>
 </blockquote>
 <p>zset底层在数据少的时候是压缩列表，数据量多了会进化成跳表。</p>
@@ -45,7 +298,7 @@
 <li><strong>列表元素个数</strong>：保存压缩列表的节点个数</li>
 <li><strong>列表结束标识符</strong>：特殊值0xFF（十进制为255），表示压缩列表的结束</li>
 </ul>
-<p>压缩列表结构：<br><img src="/2025/04/07/Redis-Zset/1.png"></p>
+<p>压缩列表结构：<br><img src="/2025/04/07/Redis-Zset/1.png" srcset="/img/loading.gif" lazyload></p>
 <ul>
 <li>如果查找定位第一个元素和最后一个元素：时间复杂度为 <code>O(1)</code> - 通过表头三个字段直接定位</li>
 <li>查找其他元素只能逐个查找：时间复杂度为 <code>O(n)</code></li>
@@ -57,25 +310,135 @@
 <li><p><strong>有序数组</strong>的高效的查找算法：二分查找</p>
 </li>
 </ol>
-<p>  两个优点。具体来说，<em>跳表在链表的基础上，增加了多级索引，通过索引位置的几个跳转，实现了数据的快速定位。</em> 如下：<br>  <img src="/2025/04/07/Redis-Zset/NeatReader-1743990195139.png" alt="NeatReader-1743990195139"></p>
+<p>  两个优点。具体来说，<em>跳表在链表的基础上，增加了多级索引，通过索引位置的几个跳转，实现了数据的快速定位。</em> 如下：<br>  <img src="/2025/04/07/Redis-Zset/NeatReader-1743990195139.png" srcset="/img/loading.gif" lazyload alt="NeatReader-1743990195139"></p>
 <ul>
 <li>跳表在链表的基础上增加了多级索引以提升查找的效率，其实是一个<strong>空间换时间</strong>的方案，必然会带来一个问题：索引是占内存的</li>
 <li>原始链表中存储的有可能是很大的对象，而索引结点只需要存储关键值和几个指针，并不需要存储对象，因此当节点本身比较大或者元素数量比较多的时候，其优势必然会被放大，而缺点则可以忽略</li>
 </ul>
-<h1 id="跳表的具体实现"><a href="#跳表的具体实现" class="headerlink" title="跳表的具体实现"></a>跳表的具体实现</h1><h2 id="1、普通的有序单向链表"><a href="#1、普通的有序单向链表" class="headerlink" title="1、普通的有序单向链表"></a>1、普通的有序单向链表</h2><p><img src="/2025/04/07/Redis-Zset/20250407094915.png"></p>
+<h1 id="跳表的具体实现"><a href="#跳表的具体实现" class="headerlink" title="跳表的具体实现"></a>跳表的具体实现</h1><h2 id="1、普通的有序单向链表"><a href="#1、普通的有序单向链表" class="headerlink" title="1、普通的有序单向链表"></a>1、普通的有序单向链表</h2><p><img src="/2025/04/07/Redis-Zset/20250407094915.png" srcset="/img/loading.gif" lazyload></p>
 <p>如果我们需要查找节点33，需要从头节点开始一个个遍历，遍历6次，时间复杂度为 <code>O(n)</code></p>
-<h2 id="2、优化"><a href="#2、优化" class="headerlink" title="2、优化"></a>2、优化</h2><p>我们在以上的有序单向链表的上一层，再添加一个一级索引：<br><img src="/2025/04/07/Redis-Zset/20250407095240.png" alt="Pasted image 20250407095240"></p>
+<h2 id="2、优化"><a href="#2、优化" class="headerlink" title="2、优化"></a>2、优化</h2><p>我们在以上的有序单向链表的上一层，再添加一个一级索引：<br><img src="/2025/04/07/Redis-Zset/20250407095240.png" srcset="/img/loading.gif" lazyload alt="Pasted image 20250407095240"></p>
 <ul>
 <li>查找节点33，遍历顺序为：<code>1 -&gt; 11 -&gt; 27 -&gt; 33</code>，一共遍历4次</li>
 </ul>
-<p>如果再向上添加一级索引：<br><img src="/2025/04/07/Redis-Zset/20250407095612.png"></p>
+<p>如果再向上添加一级索引：<br><img src="/2025/04/07/Redis-Zset/20250407095612.png" srcset="/img/loading.gif" lazyload></p>
 <ul>
 <li>查找节点33，遍历顺序为：<code>1 -&gt; 27 -&gt; 33</code>，只需要遍历3次</li>
 </ul>
 <h1 id="索引建立时机"><a href="#索引建立时机" class="headerlink" title="索引建立时机"></a>索引建立时机</h1><p>前面提到，跳表的实现还是<strong>基于有序数组的二分查找</strong>来实现的，具体如下：<br>我们在新加一个节点的时候，可以考虑一下，现在最多有几层索引，如果现在一层都没有，上来就建了8层，就很没有必要，索引新加一个节点最好最多再往上建立一层索引，那么具体多少层，可以这么想，在第一层建立的概率是1&#x2F;2，第二层建立的概率是1&#x2F;4，第三层建立的概率是1&#x2F;8……</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="type">int</span> <span class="title function_">randomLevel</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">level</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (level &lt; maxLevel &amp;&amp; Math.random() &gt; <span class="number">0.5</span>) &#123;</span><br><span class="line">        level++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> level;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-type">int</span> <span class="hljs-title function_">randomLevel</span><span class="hljs-params">()</span> &#123;
+    <span class="hljs-type">int</span> <span class="hljs-variable">level</span> <span class="hljs-operator">=</span> <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">while</span> (level &lt; maxLevel &amp;&amp; Math.random() &gt; <span class="hljs-number">0.5</span>) &#123;
+        level++;
+    &#125;
+    <span class="hljs-keyword">return</span> level;
+&#125;</code></pre></div>
 
-<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SkipList</span> &#123;  </span><br><span class="line">    <span class="comment">// 随机因子，这里设置成0.5</span></span><br><span class="line">    <span class="type">double</span> <span class="variable">factor</span> <span class="operator">=</span> <span class="number">0.5d</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 最大层级  </span></span><br><span class="line">    <span class="type">int</span> <span class="variable">maxLevel</span> <span class="operator">=</span> <span class="number">16</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 当前最大层级  </span></span><br><span class="line">    <span class="type">int</span> <span class="variable">currentMaxLevel</span> <span class="operator">=</span> <span class="number">1</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="type">Node</span> <span class="variable">head</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Node</span>(maxLevel, -<span class="number">1</span>);  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">public</span> Node <span class="title function_">find</span><span class="params">(<span class="type">int</span> value)</span> &#123;  </span><br><span class="line">        <span class="type">Node</span> <span class="variable">p</span> <span class="operator">=</span> head;  </span><br><span class="line">        <span class="comment">// 从最大层开始查找，找到前一节点，通过--i，移动到下层再开始查找  </span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> maxLevel - <span class="number">1</span>; i &gt;= <span class="number">0</span>; --i) &#123;  </span><br><span class="line">            <span class="keyword">while</span> (p.nextNodes[i] != <span class="literal">null</span> &amp;&amp; p.nextNodes[i].value &lt; value) &#123;  </span><br><span class="line">                <span class="comment">// 找到前一节点  </span></span><br><span class="line">                p = p.nextNodes[i];  </span><br><span class="line">            &#125;  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="keyword">if</span> (p.nextNodes[<span class="number">0</span>] != <span class="literal">null</span> &amp;&amp; p.nextNodes[<span class="number">0</span>].value == value) &#123;  </span><br><span class="line">            <span class="keyword">return</span> p.nextNodes[<span class="number">0</span>];  </span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">insert</span><span class="params">(<span class="type">int</span> value)</span> &#123;  </span><br><span class="line">        <span class="comment">// level代表这个节点存在于几层链表中  </span></span><br><span class="line">        <span class="type">int</span> <span class="variable">level</span> <span class="operator">=</span> randomLevel();  </span><br><span class="line">        <span class="keyword">if</span> (level &gt; currentMaxLevel) &#123;  </span><br><span class="line">            level = ++currentMaxLevel;  </span><br><span class="line">        &#125;  </span><br><span class="line">        <span class="type">Node</span> <span class="variable">newNode</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Node</span>(level, value);  </span><br><span class="line">        <span class="type">Node</span> <span class="variable">point</span> <span class="operator">=</span> head;  </span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> currentMaxLevel - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) &#123;  </span><br><span class="line">            <span class="comment">// 如果当前节点当前层级的下一个节点不为空，且比下一个节点的值小  往下走  </span></span><br><span class="line">            <span class="keyword">while</span> (point.nextNodes[i] != <span class="literal">null</span> &amp;&amp; point.nextNodes[i].value &lt; value) &#123;  </span><br><span class="line">                point = point.nextNodes[i];  </span><br><span class="line">            &#125;  </span><br><span class="line">            <span class="comment">// 节点层级比当前层级大，在该层级插入该节点   之后继续遍历  </span></span><br><span class="line">            <span class="keyword">if</span> (level &gt; i) &#123;  </span><br><span class="line">                <span class="type">Node</span> <span class="variable">temp</span> <span class="operator">=</span> point.nextNodes[i];  </span><br><span class="line">                point.nextNodes[i] = newNode;  </span><br><span class="line">                newNode.nextNodes[i] = temp;  </span><br><span class="line">            &#125;  </span><br><span class="line">        &#125;  </span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 随机层级，如果生成的概率&gt;0.5，就level++  </span></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="title function_">randomLevel</span><span class="params">()</span> &#123;  </span><br><span class="line">        <span class="type">int</span> <span class="variable">level</span> <span class="operator">=</span> <span class="number">1</span>;  </span><br><span class="line">        <span class="keyword">while</span> (level &lt; maxLevel &amp;&amp; Math.random() &gt; factor) &#123;  </span><br><span class="line">            level++;  </span><br><span class="line">        &#125;  </span><br><span class="line">        <span class="keyword">return</span> level;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">printAll</span><span class="params">(<span class="type">int</span> level)</span> &#123;  </span><br><span class="line">        <span class="keyword">if</span> (level &gt; currentMaxLevel) &#123;  </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;还没有到这个层数&quot;</span>);  </span><br><span class="line">        &#125;  </span><br><span class="line">        <span class="type">Node</span> <span class="variable">point</span> <span class="operator">=</span> head;  </span><br><span class="line">        <span class="keyword">while</span> (point.nextNodes[level - <span class="number">1</span>] != <span class="literal">null</span>) &#123;  </span><br><span class="line">            System.out.print(point.nextNodes[level - <span class="number">1</span>] + <span class="string">&quot; &quot;</span>);  </span><br><span class="line">            point = point.nextNodes[level - <span class="number">1</span>];  </span><br><span class="line">        &#125;  </span><br><span class="line">        System.out.println();  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">Node</span> &#123;  </span><br><span class="line">        <span class="comment">// 节点值  </span></span><br><span class="line">        <span class="type">int</span> value;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">/**  </span></span><br><span class="line"><span class="comment">         * 这个节点在某一层的下一个节点的集合，比如nextNodes[2]就是node在第二层的下一个节点  </span></span><br><span class="line"><span class="comment">         */</span>  </span><br><span class="line">        Node[] nextNodes;  </span><br><span class="line">  </span><br><span class="line">        <span class="keyword">public</span> <span class="title function_">Node</span><span class="params">(<span class="type">int</span> level, <span class="type">int</span> value)</span> &#123;  </span><br><span class="line">            nextNodes = <span class="keyword">new</span> <span class="title class_">Node</span>[level];  </span><br><span class="line">            <span class="built_in">this</span>.value = value;  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="meta">@Override</span>  </span><br><span class="line">        <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span> &#123;  </span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;Node&#123;&quot;</span> +  </span><br><span class="line">                    <span class="string">&quot;value=&quot;</span> + value +  </span><br><span class="line">                    <span class="string">&#x27;&#125;&#x27;</span>;  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;  </span><br><span class="line">        <span class="type">SkipList</span> <span class="variable">skipList</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SkipList</span>();  </span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">1000</span>; i++) &#123;  </span><br><span class="line">            skipList.insert(i);  </span><br><span class="line">        &#125;  </span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> skipList.currentMaxLevel; i &gt; <span class="number">0</span>; i--) &#123;  </span><br><span class="line">            skipList.printAll(i);  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">SkipList</span> &#123;  
+    <span class="hljs-comment">// 随机因子，这里设置成0.5</span>
+    <span class="hljs-type">double</span> <span class="hljs-variable">factor</span> <span class="hljs-operator">=</span> <span class="hljs-number">0.5d</span>;  
+  
+    <span class="hljs-comment">// 最大层级  </span>
+    <span class="hljs-type">int</span> <span class="hljs-variable">maxLevel</span> <span class="hljs-operator">=</span> <span class="hljs-number">16</span>;  
+  
+    <span class="hljs-comment">// 当前最大层级  </span>
+    <span class="hljs-type">int</span> <span class="hljs-variable">currentMaxLevel</span> <span class="hljs-operator">=</span> <span class="hljs-number">1</span>;  
+  
+    <span class="hljs-type">Node</span> <span class="hljs-variable">head</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Node</span>(maxLevel, -<span class="hljs-number">1</span>);  
+  
+    <span class="hljs-keyword">public</span> Node <span class="hljs-title function_">find</span><span class="hljs-params">(<span class="hljs-type">int</span> value)</span> &#123;  
+        <span class="hljs-type">Node</span> <span class="hljs-variable">p</span> <span class="hljs-operator">=</span> head;  
+        <span class="hljs-comment">// 从最大层开始查找，找到前一节点，通过--i，移动到下层再开始查找  </span>
+        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> maxLevel - <span class="hljs-number">1</span>; i &gt;= <span class="hljs-number">0</span>; --i) &#123;  
+            <span class="hljs-keyword">while</span> (p.nextNodes[i] != <span class="hljs-literal">null</span> &amp;&amp; p.nextNodes[i].value &lt; value) &#123;  
+                <span class="hljs-comment">// 找到前一节点  </span>
+                p = p.nextNodes[i];  
+            &#125;  
+        &#125;  
+  
+        <span class="hljs-keyword">if</span> (p.nextNodes[<span class="hljs-number">0</span>] != <span class="hljs-literal">null</span> &amp;&amp; p.nextNodes[<span class="hljs-number">0</span>].value == value) &#123;  
+            <span class="hljs-keyword">return</span> p.nextNodes[<span class="hljs-number">0</span>];  
+        &#125; <span class="hljs-keyword">else</span> &#123;  
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;  
+        &#125;  
+    &#125;  
+  
+    <span class="hljs-keyword">public</span> <span class="hljs-type">boolean</span> <span class="hljs-title function_">insert</span><span class="hljs-params">(<span class="hljs-type">int</span> value)</span> &#123;  
+        <span class="hljs-comment">// level代表这个节点存在于几层链表中  </span>
+        <span class="hljs-type">int</span> <span class="hljs-variable">level</span> <span class="hljs-operator">=</span> randomLevel();  
+        <span class="hljs-keyword">if</span> (level &gt; currentMaxLevel) &#123;  
+            level = ++currentMaxLevel;  
+        &#125;  
+        <span class="hljs-type">Node</span> <span class="hljs-variable">newNode</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Node</span>(level, value);  
+        <span class="hljs-type">Node</span> <span class="hljs-variable">point</span> <span class="hljs-operator">=</span> head;  
+        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> currentMaxLevel - <span class="hljs-number">1</span>; i &gt;= <span class="hljs-number">0</span>; i--) &#123;  
+            <span class="hljs-comment">// 如果当前节点当前层级的下一个节点不为空，且比下一个节点的值小  往下走  </span>
+            <span class="hljs-keyword">while</span> (point.nextNodes[i] != <span class="hljs-literal">null</span> &amp;&amp; point.nextNodes[i].value &lt; value) &#123;  
+                point = point.nextNodes[i];  
+            &#125;  
+            <span class="hljs-comment">// 节点层级比当前层级大，在该层级插入该节点   之后继续遍历  </span>
+            <span class="hljs-keyword">if</span> (level &gt; i) &#123;  
+                <span class="hljs-type">Node</span> <span class="hljs-variable">temp</span> <span class="hljs-operator">=</span> point.nextNodes[i];  
+                point.nextNodes[i] = newNode;  
+                newNode.nextNodes[i] = temp;  
+            &#125;  
+        &#125;  
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;  
+    &#125;  
+  
+    <span class="hljs-comment">// 随机层级，如果生成的概率&gt;0.5，就level++  </span>
+    <span class="hljs-keyword">private</span> <span class="hljs-type">int</span> <span class="hljs-title function_">randomLevel</span><span class="hljs-params">()</span> &#123;  
+        <span class="hljs-type">int</span> <span class="hljs-variable">level</span> <span class="hljs-operator">=</span> <span class="hljs-number">1</span>;  
+        <span class="hljs-keyword">while</span> (level &lt; maxLevel &amp;&amp; Math.random() &gt; factor) &#123;  
+            level++;  
+        &#125;  
+        <span class="hljs-keyword">return</span> level;  
+    &#125;  
+  
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">printAll</span><span class="hljs-params">(<span class="hljs-type">int</span> level)</span> &#123;  
+        <span class="hljs-keyword">if</span> (level &gt; currentMaxLevel) &#123;  
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">RuntimeException</span>(<span class="hljs-string">&quot;还没有到这个层数&quot;</span>);  
+        &#125;  
+        <span class="hljs-type">Node</span> <span class="hljs-variable">point</span> <span class="hljs-operator">=</span> head;  
+        <span class="hljs-keyword">while</span> (point.nextNodes[level - <span class="hljs-number">1</span>] != <span class="hljs-literal">null</span>) &#123;  
+            System.out.print(point.nextNodes[level - <span class="hljs-number">1</span>] + <span class="hljs-string">&quot; &quot;</span>);  
+            point = point.nextNodes[level - <span class="hljs-number">1</span>];  
+        &#125;  
+        System.out.println();  
+    &#125;  
+  
+    <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Node</span> &#123;  
+        <span class="hljs-comment">// 节点值  </span>
+        <span class="hljs-type">int</span> value;  
+  
+        <span class="hljs-comment">/**  </span>
+<span class="hljs-comment">         * 这个节点在某一层的下一个节点的集合，比如nextNodes[2]就是node在第二层的下一个节点  </span>
+<span class="hljs-comment">         */</span>  
+        Node[] nextNodes;  
+  
+        <span class="hljs-keyword">public</span> <span class="hljs-title function_">Node</span><span class="hljs-params">(<span class="hljs-type">int</span> level, <span class="hljs-type">int</span> value)</span> &#123;  
+            nextNodes = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Node</span>[level];  
+            <span class="hljs-built_in">this</span>.value = value;  
+        &#125;  
+  
+        <span class="hljs-meta">@Override</span>  
+        <span class="hljs-keyword">public</span> String <span class="hljs-title function_">toString</span><span class="hljs-params">()</span> &#123;  
+            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Node&#123;&quot;</span> +  
+                    <span class="hljs-string">&quot;value=&quot;</span> + value +  
+                    <span class="hljs-string">&#x27;&#125;&#x27;</span>;  
+        &#125;  
+    &#125;  
+  
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> &#123;  
+        <span class="hljs-type">SkipList</span> <span class="hljs-variable">skipList</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">SkipList</span>();  
+        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">1000</span>; i++) &#123;  
+            skipList.insert(i);  
+        &#125;  
+        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> skipList.currentMaxLevel; i &gt; <span class="hljs-number">0</span>; i--) &#123;  
+            skipList.printAll(i);  
+        &#125;  
+    &#125;  
+&#125;</code></pre></div>
 
 <h1 id="为什么不使用红黑树？"><a href="#为什么不使用红黑树？" class="headerlink" title="为什么不使用红黑树？"></a>为什么不使用红黑树？</h1><ol>
 <li>虽然跳表消耗较多的内存，但是我们内部优化过跳表，可以接受。</li>
@@ -83,63 +446,393 @@
 <li>多范围查询的支持，跳表完胜红黑树。</li>
 </ol>
 
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Redis/" class="category-chain-item">Redis</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Redis/" class="print-no-link">#Redis</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Redis-Zset</div>
+      <div>http://example.com/2025/04/07/Redis-Zset/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>尘尘</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年4月7日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/04/07/MySQL%E6%97%A5%E5%BF%97/" title="MySQL日志">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">MySQL日志</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div class="disqus" style="width:100%">
+    <div id="disqus_thread"></div>
+    
+      <script type="text/javascript">
+        var disqus_config = function() {
+          this.page.url = 'http://example.com/2025/04/07/Redis-Zset/';
+          this.page.identifier = '/2025/04/07/Redis-Zset/';
+        };
+        Fluid.utils.loadComments('#disqus_thread', function() {
+          var d = document, s = d.createElement('script');
+          s.src = '//' + 'fluid' + '.disqus.com/embed.js';
+          s.setAttribute('data-timestamp', new Date());
+          (d.head || d.body).appendChild(s);
+        });
+      </script>
+    
+    <noscript>Please enable JavaScript to view the comments</noscript>
+  </div>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
     </div>
 
-    
-        <hr class="fhr">
-        <div id="vcomments"></div>
-    
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
 </div>
-    <div class="footer" id="footer">
-    <p>Copyright © 2020 <a class="flink" target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-<a class="flink" target="_blank" rel="noopener" href="https://github.com/sanjinhub/hexo-theme-geek">Geek</a>.
-        <label class="el-switch el-switch-green el-switch-sm" style="vertical-align: sub;">
-            <input type="checkbox" name="switch" id="update_style">
-            <span class="el-switch-style"></span>
-        </label>
-<!--         <script type="text/javascript">
-        var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");
-        document.write(unescape("%3Cspan id='cnzz_stat_icon_1278548644'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "v1.cnzz.com/stat.php%3Fid%3D1278548644%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));
-        </script> -->
-    </p>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
 </div>
-<input type="hidden" id="web_style" value="black">
-<input type="hidden" id="valine_appid" value="CmCti21ooOOIzFOhEyFkFvR0-gzGzoHsz">
-<input type="hidden" id="valine_appKey" value="FqiyUqbg7McKN2eG0MCewupf">
-
-<script src="/libs/jquery.min.js"></script>
 
 
-<script src="/libs/highlight/highlight.pack.js"></script>
 
-<script src='//cdn.jsdelivr.net/npm/valine@1.3.10/dist/Valine.min.js'></script>
 
-<script src="/js/js.js"></script>
 
-<style type="text/css">
-.v * {
-    color: #698fca;
-}
+  
 
-.v .vlist .vcard .vhead .vsys {
-    color: #3a3e4a;
-}
 
-.v .vlist .vcard .vh .vmeta .vat {
-    color: #638fd5;
-}
 
-.v .vlist .vcard .vhead .vnick {
-    color: #6ba1ff;
-}
+  
 
-.v a {
-    color: #8696b1;
-}
 
-.v .vlist .vcard .vhead .vnick:hover {
-    color: #669bfc;
-}
-</style>
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
 </body>
-
 </html>
