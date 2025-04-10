@@ -4,6 +4,33 @@
   
   
   <entry>
+    <title>MySQL集群</title>
+    <link href="/2025/04/10/MySQL%E9%9B%86%E7%BE%A4/"/>
+    <url>/2025/04/10/MySQL%E9%9B%86%E7%BE%A4/</url>
+    
+    <content type="html"><![CDATA[<div class="note note-success">            <p>本文主要总结MySQL的集群及相关问题</p>          </div><h1 id="一、MySQL集群架构"><a href="#一、MySQL集群架构" class="headerlink" title="一、MySQL集群架构"></a>一、MySQL集群架构</h1><h2 id="1、架构设计理念"><a href="#1、架构设计理念" class="headerlink" title="1、架构设计理念"></a>1、架构设计理念</h2><p>在集群架构设计时，主要遵从下面<u>三个维度</u>：</p><ol><li>可用性</li><li>扩展性</li><li>一致性</li></ol><h2 id="2、可用性设计"><a href="#2、可用性设计" class="headerlink" title="2、可用性设计"></a>2、可用性设计</h2><ul><li>站点高可用，冗余站点</li><li>服务高可用，冗余服务</li><li>数据高可用，冗余数据</li></ul><p>保证高可用的方法是<strong>冗余</strong>。但是数据冗余带来的问题是数据一致性问题。</p><p>实现高可用的方案有以下几种架构模式：</p><h3 id="主从模式"><a href="#主从模式" class="headerlink" title="主从模式"></a>主从模式</h3><p>简单灵活，能满足多种需求。比较主流的用法，但是写操作高可用需要自行处理。</p><h3 id="双主模式"><a href="#双主模式" class="headerlink" title="双主模式"></a>双主模式</h3><p>互为主从，有双主双写、双主单写两种方式，建议使用双主单写</p><h2 id="3、扩展性设计"><a href="#3、扩展性设计" class="headerlink" title="3、扩展性设计"></a>3、扩展性设计</h2><p>扩展性主要围绕着<u>读操作扩展</u>和<u>写操作扩展</u>展开。</p><blockquote><p>如何扩展以提高读性能？</p></blockquote><ul><li><p><strong>加从库：</strong></p><ul><li>简单易操作，方案成熟。</li><li>从库过多会引发主库性能损耗。建议不要作为长期的扩充方案，应该设法用良好的设计避免持续加从库来缓解读性能问题。</li></ul></li><li><p><strong>分库分表：</strong></p><ul><li>可以分为垂直拆分和水平拆分，垂直拆分可以缓解部分压力，水平拆分理论上可以无限扩展。</li></ul></li></ul><blockquote><p>如何扩展以提高写性能？</p></blockquote><ul><li><strong>分库分表</strong></li></ul><h2 id="4、一致性设计"><a href="#4、一致性设计" class="headerlink" title="4、一致性设计"></a>4、一致性设计</h2><p>一致性主要考虑集群中各数据库数据同步以及同步延迟问题。可以采用的方案如下：</p><ul><li><p>不使用从库</p><ul><li>扩展读性能问题需要单独考虑，否则容易出现系统瓶颈。</li></ul></li><li><p>增加访问路由层</p><ul><li>可以先得到主从同步最长时间 <code>t</code>，在数据发生修改后的 <code>t</code> 时间内，先访问主库。</li></ul></li></ul><h1 id="二、主从模式"><a href="#二、主从模式" class="headerlink" title="二、主从模式"></a>二、主从模式</h1><h2 id="1、概述"><a href="#1、概述" class="headerlink" title="1、概述"></a>1、概述</h2><p>MySQL主从模式是指数据可以从一个MySQL数据库服务器主节点复制到一个或多个从节点。MySQL 默认采用<strong>异步复制</strong>方式，这样从节点不用一直访问主服务器来更新自己的数据，从节点可以复制主数据库中的所有数据库，或者特定的数据库，或者特定的表。架构如下：</p><p><img src="/MySQL%E9%9B%86%E7%BE%A4/image-20250410151511416.png"></p><p>主从复制用途：</p><ul><li>实时灾备，用于故障切换（高可用）</li><li>读写分离，提供查询服务（读扩展）</li><li>数据备份，避免影响业务（高可用）</li></ul><p>主从部署必要条件：</p><ul><li>从库服务器能连通主库</li><li>主库开启binlog日志（设置log-bin参数）</li><li>主从server-id不同</li></ul><h2 id="2、实现原理"><a href="#2、实现原理" class="headerlink" title="2、实现原理"></a>2、实现原理</h2><p>如图：</p><p><img src="/MySQL%E9%9B%86%E7%BE%A4/image-20250410152720766.png" alt="MySQL主从复制（异步复制）"></p><ol><li>写入Bin log：主库将变更<strong>写入binlog</strong>，提交事务，并更新本地存储数据</li><li><u>binlog dump线程</u>接到写入请求后，读取binlog信息推送给节点的IO线程</li><li>同步Bin log（<u>I&#x2F;O线程</u>）：从库连接到主库后，从库的IO线程负责将主库的binlog日志复制到自己本地，并<strong>写入中继日志中</strong></li><li>回放Bin log（<u>SQL线程</u>）：从库的SQL线程从中继日志中读取binlog，并<strong>执行其中的SQL内容</strong>，即：在从库再次执行一遍</li></ol><p><img src="/MySQL%E9%9B%86%E7%BE%A4/image-20250410154422407.png" alt="异步复制时序图"></p><p>主从复制存在的问题：</p><ol><li><p>主库宕机后，数据可能丢失</p></li><li><p>从库只有一个SQL Thread，主库写压力大，复制很可能延时</p></li></ol><div class="note note-danger">            <p>主从延迟的原因有哪些？</p>          </div><ol><li><strong>主库的从库太多</strong>，主库需要将binlog日志传输给多个从库，导致复制延迟</li><li>在从库执行的SQL中存在<strong>慢查询</strong>语句，导致整体复制进程的延迟</li><li>如果<strong>主库的读写压力过大</strong>，会导致主库处理binlog的速度减慢，进而影响复制延迟</li></ol><div class="note note-danger">            <p>对于主从延迟，可以采取什么措施？</p>          </div><ol><li>减少从库的数量，降低主库的负载，减少复制延迟</li><li>优化慢查询语句，减少从库执行SQL的延迟</li><li>对主库进行性能优化，减少主库的读写压力，提高binlog写入速度</li><li>网络优化：同城部署或同机房部署</li><li>硬件优化：提高cpu、内存、使用ssd硬盘</li><li>并行复制：MySQL5.6提供了基于库的并行复制、5.7基于组提交的并行复制、8.0基于<strong>WRITESET 并行复制</strong></li></ol><blockquote><p>内容太多了。。。待更</p></blockquote>]]></content>
+    
+    
+    <categories>
+      
+      <category>MySQL</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>MySQL</tag>
+      
+      <tag>集群</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>RPC协议: 为什么要设计RPC协议？如何设计可扩展且向后兼容的协议？</title>
     <link href="/2025/04/10/RPC%E5%8D%8F%E8%AE%AE-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%AE%BE%E8%AE%A1RPC%E5%8D%8F%E8%AE%AE%EF%BC%9F%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E5%8F%AF%E6%89%A9%E5%B1%95%E4%B8%94%E5%90%91%E5%90%8E%E5%85%BC%E5%AE%B9%E7%9A%84%E5%8D%8F%E8%AE%AE%EF%BC%9F/"/>
     <url>/2025/04/10/RPC%E5%8D%8F%E8%AE%AE-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%AE%BE%E8%AE%A1RPC%E5%8D%8F%E8%AE%AE%EF%BC%9F%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E5%8F%AF%E6%89%A9%E5%B1%95%E4%B8%94%E5%90%91%E5%90%8E%E5%85%BC%E5%AE%B9%E7%9A%84%E5%8D%8F%E8%AE%AE%EF%BC%9F/</url>
