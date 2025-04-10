@@ -227,6 +227,69 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
+        <a href="/2025/04/10/RPC%E5%8D%8F%E8%AE%AE-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%AE%BE%E8%AE%A1RPC%E5%8D%8F%E8%AE%AE%EF%BC%9F%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E5%8F%AF%E6%89%A9%E5%B1%95%E4%B8%94%E5%90%91%E5%90%8E%E5%85%BC%E5%AE%B9%E7%9A%84%E5%8D%8F%E8%AE%AE%EF%BC%9F/" target="_self">
+          RPC协议: 为什么要设计RPC协议？如何设计可扩展且向后兼容的协议？
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/10/RPC%E5%8D%8F%E8%AE%AE-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%AE%BE%E8%AE%A1RPC%E5%8D%8F%E8%AE%AE%EF%BC%9F%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E5%8F%AF%E6%89%A9%E5%B1%95%E4%B8%94%E5%90%91%E5%90%8E%E5%85%BC%E5%AE%B9%E7%9A%84%E5%8D%8F%E8%AE%AE%EF%BC%9F/" target="_self">
+        <div>
+          本文主要总结RPC框架中协议层的设计             为什么要设计RPC协议？只有二进制才能在网络中传输，所以 RPC 请求在发送到网络中之前，需要把方法调用的请求参数转成二进制；转成二进制后，写入本地 Socket 中，然后被网卡发送到网络设备中。 但在传输过程中，RPC 并不会把请求参数的所有二进制数据整体一下子发送到对端机器上，中间可能会拆分成好几个数据包，
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-10 00:06" pubdate>
+              2025-04-10
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/RPC%E5%AE%9E%E6%88%98%E4%B8%8E%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86/" class="category-chain-item">RPC实战与核心原理</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/">#网络通信</a>
+            
+              <a href="/tags/RPC/">#RPC</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
         <a href="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/" target="_self">
           RPC: 什么是RPC？RPC的通信流程是怎样的？
         </a>
