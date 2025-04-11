@@ -29,8 +29,11 @@
 <meta property="og:image" content="http://example.com/2025/04/10/MySQL%E9%9B%86%E7%BE%A4/image-20250410151511416.png">
 <meta property="og:image" content="http://example.com/2025/04/10/MySQL%E9%9B%86%E7%BE%A4/image-20250410152720766.png">
 <meta property="og:image" content="http://example.com/2025/04/10/MySQL%E9%9B%86%E7%BE%A4/image-20250410154422407.png">
+<meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/713426.png">
+<meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/642382.png">
+<meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/556365.png">
 <meta property="article:published_time" content="2025-04-10T06:56:08.000Z">
-<meta property="article:modified_time" content="2025-04-10T07:58:12.968Z">
+<meta property="article:modified_time" content="2025-04-11T11:58:57.767Z">
 <meta property="article:author" content="尘尘">
 <meta property="article:tag" content="MySQL">
 <meta property="article:tag" content="集群">
@@ -228,7 +231,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          1.1k 字
+          2.4k 字
         
       </span>
     
@@ -239,7 +242,7 @@
         
         
         
-          9 分钟
+          21 分钟
         
       </span>
     
@@ -361,12 +364,27 @@
 <p><img src="/2025/04/10/MySQL%E9%9B%86%E7%BE%A4/image-20250410154422407.png" srcset="/img/loading.gif" lazyload alt="异步复制时序图"></p>
 <p>主从复制存在的问题：</p>
 <ol>
-<li><p>主库宕机后，数据可能丢失</p>
+<li><p>主库宕机后，<strong>数据可能丢失</strong></p>
 </li>
-<li><p>从库只有一个SQL Thread，主库写压力大，复制很可能延时</p>
+<li><p>从库只有一个SQL Thread，主库写压力大，<strong>复制可能延时</strong></p>
 </li>
 </ol>
-<div class="note note-danger">
+<h3 id="解决数据丢失问题：半同步复制"><a href="#解决数据丢失问题：半同步复制" class="headerlink" title="解决数据丢失问题：半同步复制"></a>解决数据丢失问题：半同步复制</h3><p>为了提升数据安全，MySQL让Master在某一个时间点等待Slave节点的 ACK（Acknowledgecharacter）消息，接收到ACK消息后才进行事务提交，这也是半同步复制的基础。</p>
+<p>MySQL从5.5版本开始引入了半同步复制机制来降低数据丢失的概率。</p>
+<p>介绍半同步复制之前先快速过一下 MySQL 事务写入碰到主从复制时的完整过程，主库事务写入分为 4个步骤：</p>
+<ol>
+<li>innodb写入redolog文件（prepare阶段）</li>
+<li>binlog文件刷盘、异步处理binlog文件</li>
+<li>innodb提交redolog文件（commit状态）</li>
+<li>主节点发送binlog到从节点</li>
+</ol>
+<ul>
+<li>**主从复制：**主节点不需要关注从节点是否接收到binlog事件</li>
+<li>**半同步复制：**主节点需要在第三步等待从节点返回ACK时，即为after-commit（MySQL 5.5引入）</li>
+<li>**增强半同步：**主节点需要在第二步等待从节点返回ACK时，即为after-sync（MySQL 5.7引入）</li>
+</ul>
+<p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/713426.png" srcset="/img/loading.gif" lazyload alt="半同步复制时序图"></p>
+<h3 id="解决主从延迟问题：并行复制"><a href="#解决主从延迟问题：并行复制" class="headerlink" title="解决主从延迟问题：并行复制"></a>解决主从延迟问题：并行复制</h3><div class="note note-danger">
             <p>主从延迟的原因有哪些？</p>
           </div>
 
@@ -387,8 +405,67 @@
 <li>硬件优化：提高cpu、内存、使用ssd硬盘</li>
 <li>并行复制：MySQL5.6提供了基于库的并行复制、5.7基于组提交的并行复制、8.0基于<strong>WRITESET 并行复制</strong></li>
 </ol>
+<p>在从库中有两个线程：IO Thread和SQL Thread，都是<u>单线程</u>模式工作，因此有了<u>延迟问题</u>，我们可以采用<strong>多线程机制</strong>来加强，减少从库复制延迟。（IO Thread多线程意义不大，主要指的是SQL Thread多线程）<br>在MySQL的5.6、5.7、8.0版本上，都是基于上述SQL Thread多线程思想，不断优化，减少复制延迟。</p>
+<h1 id="三、读写分离"><a href="#三、读写分离" class="headerlink" title="三、读写分离"></a>三、读写分离</h1><p>大多数互联网业务中，往往读多写少，这时候数据库的读会首先成为数据库的瓶颈。如果我们已经优化了SQL，但是读依旧还是瓶颈时，这时就可以选择**“读写分离”**架构了。</p>
+<p>读写分离首先需要将数据库分为主从库，<u>一个主库用于写数据，多个从库完成读数据的操作，主从库之间通过主从复制机制进行数据的同步</u>：</p>
+<p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/642382.png" srcset="/img/loading.gif" lazyload alt="读写分离"></p>
+<ul>
+<li>在应用中可以在从库追加多个索引来优化查询，主库这些索引可以不加，用于提升写效率</li>
+<li>读写分离架构也能够<u>消除读写锁冲突</u>从而提升数据库的读写性能</li>
+</ul>
+<p>使用读写分离架构需要注意：<strong>主从同步延迟</strong>和<strong>读写分配机制</strong>问题</p>
+<h2 id="1、主从同步延迟"><a href="#1、主从同步延迟" class="headerlink" title="1、主从同步延迟"></a>1、主从同步延迟</h2><p>使用读写分离架构时，数据库主从同步具有延迟性，数据一致性会有影响，对于一些实时性要求比较高的操作，有以下解决方案：</p>
+<ol>
+<li><p>写后立刻读</p>
+<ul>
+<li>在写入数据库后，某个时间段内读操作就去主库，之后读操作访问从库</li>
+</ul>
+</li>
+<li><p>二次查询</p>
+<ul>
+<li>先去从库读取数据，找不到时就去主库进行数据读取</li>
+<li>该操作容易将读压力返还给主库，为了避免恶意攻击，建议对数据库访问API操作进行封装，有利于安全和低耦合</li>
+</ul>
+</li>
+<li><p>根据业务特殊处理</p>
+<ul>
+<li>根据业务特点和重要程度进行调整，比如：<ul>
+<li>重要的、实时性要求高的业务数据读写可以放在主库</li>
+<li>次要的业务，实时性要求不高可以进行读写分离，查询时去从库查询</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="2、读写分离落地"><a href="#2、读写分离落地" class="headerlink" title="2、读写分离落地"></a>2、读写分离落地</h2><p>读写路由分配机制是实现读写分离架构最关键的一个环节，就是<u>控制何时去主库写，何时去从库读</u>。目前较为常见的实现方案分为以下两种：</p>
+<ol>
+<li><p>基于编程和配置实现（应用端）</p>
+<ul>
+<li>程序员在代码中封装数据库的操作，代码中可以根据操作类型进行<strong>路由分配</strong>，<u>增删改时操作主库，查询时操作从库</u>。这类方法也是目前生产环境下应用最广泛的。</li>
+<li>优点：实现简单，因为程序在代码中实现，不需要增加额外的硬件开支</li>
+<li>缺点：需要开发人员来实现，运维人员无从下手，如果其中一个数据库宕机了，就需要修改配置重启项目</li>
+</ul>
+</li>
+<li><p>基于服务器端代理实现（服务器端）</p>
+</li>
+</ol>
+<p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/556365.png" srcset="/img/loading.gif" lazyload></p>
+<p>中间件代理一般<u>介于应用服务器和数据库服务器之间</u>，从图中可以看到，应用服务器并不直接进入到master数据库或者slave数据库，而是进入MySQL proxy代理服务器。代理服务器接收到应用服务器的请求后，先进行判断然后转发到后端master和slave数据库。</p>
+<p>常见的数据库中间件</p>
+<ul>
+<li><p>MySQL Proxy：是官方提供的MySQL中间件产品可以实现负载平衡、读写分离等。</p>
+</li>
+<li><p>MyCat：MyCat是一款基于阿里开源产品Cobar而研发的，基于 Java 语言编写的开源数据库中间件。</p>
+</li>
+<li><p>ShardingSphere：ShardingSphere是一套开源的分布式数据库中间件解决方案，它由ShardingJDBC、Sharding-Proxy和Sharding-Sidecar（计划中）这3款相互独立的产品组成。已经在2020年4月16日从Apache孵化器毕业，成为Apache顶级项目。</p>
+</li>
+<li><p>Atlas：Atlas是由 Qihoo 360公司Web平台部基础架构团队开发维护的一个数据库中间件。</p>
+</li>
+<li><p>Amoeba：变形虫，该开源框架于2008年开始发布一款 Amoeba for MySQL软件。</p>
+</li>
+</ul>
 <blockquote>
-<p>内容太多了。。。待更</p>
+<p>待更。。。。</p>
 </blockquote>
 
                 
