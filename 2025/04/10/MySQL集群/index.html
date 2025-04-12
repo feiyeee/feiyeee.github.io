@@ -33,7 +33,7 @@
 <meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/642382.png">
 <meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/556365.png">
 <meta property="article:published_time" content="2025-04-10T06:56:08.000Z">
-<meta property="article:modified_time" content="2025-04-11T11:58:57.767Z">
+<meta property="article:modified_time" content="2025-04-12T10:46:36.390Z">
 <meta property="article:author" content="尘尘">
 <meta property="article:tag" content="MySQL">
 <meta property="article:tag" content="集群">
@@ -379,9 +379,9 @@
 <li>主节点发送binlog到从节点</li>
 </ol>
 <ul>
-<li>**主从复制：**主节点不需要关注从节点是否接收到binlog事件</li>
-<li>**半同步复制：**主节点需要在第三步等待从节点返回ACK时，即为after-commit（MySQL 5.5引入）</li>
-<li>**增强半同步：**主节点需要在第二步等待从节点返回ACK时，即为after-sync（MySQL 5.7引入）</li>
+<li><strong>主从复制：</strong> 主节点不需要关注从节点是否接收到binlog事件</li>
+<li>**半同步复制： **主节点需要在第三步等待从节点返回ACK时，即为after-commit（MySQL 5.5引入）</li>
+<li><strong>增强半同步：</strong> 主节点需要在第二步等待从节点返回ACK时，即为after-sync（MySQL 5.7引入）</li>
 </ul>
 <p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/713426.png" srcset="/img/loading.gif" lazyload alt="半同步复制时序图"></p>
 <h3 id="解决主从延迟问题：并行复制"><a href="#解决主从延迟问题：并行复制" class="headerlink" title="解决主从延迟问题：并行复制"></a>解决主从延迟问题：并行复制</h3><div class="note note-danger">
@@ -406,7 +406,7 @@
 <li>并行复制：MySQL5.6提供了基于库的并行复制、5.7基于组提交的并行复制、8.0基于<strong>WRITESET 并行复制</strong></li>
 </ol>
 <p>在从库中有两个线程：IO Thread和SQL Thread，都是<u>单线程</u>模式工作，因此有了<u>延迟问题</u>，我们可以采用<strong>多线程机制</strong>来加强，减少从库复制延迟。（IO Thread多线程意义不大，主要指的是SQL Thread多线程）<br>在MySQL的5.6、5.7、8.0版本上，都是基于上述SQL Thread多线程思想，不断优化，减少复制延迟。</p>
-<h1 id="三、读写分离"><a href="#三、读写分离" class="headerlink" title="三、读写分离"></a>三、读写分离</h1><p>大多数互联网业务中，往往读多写少，这时候数据库的读会首先成为数据库的瓶颈。如果我们已经优化了SQL，但是读依旧还是瓶颈时，这时就可以选择**“读写分离”**架构了。</p>
+<h1 id="三、读写分离"><a href="#三、读写分离" class="headerlink" title="三、读写分离"></a>三、读写分离</h1><p>大多数互联网业务中，往往读多写少，这时候数据库的读会首先成为数据库的瓶颈。如果我们已经优化了SQL，但是读依旧还是瓶颈时，这时就可以选择 <strong>“读写分离”</strong> 架构了。</p>
 <p>读写分离首先需要将数据库分为主从库，<u>一个主库用于写数据，多个从库完成读数据的操作，主从库之间通过主从复制机制进行数据的同步</u>：</p>
 <p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/642382.png" srcset="/img/loading.gif" lazyload alt="读写分离"></p>
 <ul>
@@ -558,6 +558,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/04/12/%E5%9B%9E%E6%BA%AF%E4%B8%AA%E4%BA%BA%E6%80%BB%E7%BB%93%EF%BC%9A%E7%BB%84%E5%90%88%E9%97%AE%E9%A2%98/" title="回溯个人总结：组合问题">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">回溯个人总结：组合问题</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
