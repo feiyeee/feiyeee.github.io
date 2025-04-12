@@ -33,7 +33,7 @@
 <meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/2180401183.png">
 <meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/2183605283.png">
 <meta property="article:published_time" content="2025-04-12T09:20:43.000Z">
-<meta property="article:modified_time" content="2025-04-12T10:47:27.427Z">
+<meta property="article:modified_time" content="2025-04-12T15:02:29.627Z">
 <meta property="article:author" content="尘尘">
 <meta property="article:tag" content="回溯">
 <meta name="twitter:card" content="summary_large_image">
@@ -346,7 +346,7 @@
 <li>保存每一次遍历后得到的结果：<code>List&lt;Integer&gt; list = new ArrayList&lt;&gt;();</code></li>
 </ul>
 <p>函数参数：</p>
-<p>因为我们每一次遍历都需要控制每一棵树的root（如上图，三棵树的root分别为：1、2、3），所以传入回溯函数的参数里，除了n和k，还有index：</p>
+<p>因为我们每一次遍历都需要控制每一棵树（或子树）的root（如上图，三棵树的root分别为：1、2、3），所以传入回溯函数的参数里，除了n和k，还有index：</p>
 <div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">backTracking</span><span class="hljs-params">(<span class="hljs-type">int</span> n, <span class="hljs-type">int</span> k, <span class="hljs-type">int</span> index)</span>;</code></pre></div>
 
 <h3 id="2、确定回溯函数终止条件"><a href="#2、确定回溯函数终止条件" class="headerlink" title="2、确定回溯函数终止条件"></a>2、确定回溯函数终止条件</h3><p>终止条件：</p>
@@ -384,7 +384,7 @@
 <h3 id="初始答案"><a href="#初始答案" class="headerlink" title="初始答案"></a>初始答案</h3><p>附上：</p>
 <div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">class</span> <span class="hljs-title class_">Solution</span> &#123;
     <span class="hljs-keyword">public</span> List&lt;List&lt;Integer&gt;&gt; res = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
-    <span class="hljs-keyword">public</span> List&lt;Integer&gt; path = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+    <span class="hljs-keyword">public</span> List&lt;Integer&gt; list = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
 
     <span class="hljs-keyword">public</span> List&lt;List&lt;Integer&gt;&gt; <span class="hljs-title function_">combine</span><span class="hljs-params">(<span class="hljs-type">int</span> n, <span class="hljs-type">int</span> k)</span> &#123;
         backTracking(n, k, <span class="hljs-number">1</span>);
@@ -393,30 +393,30 @@
 
     <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">backTracking</span><span class="hljs-params">(<span class="hljs-type">int</span> n, <span class="hljs-type">int</span> k, <span class="hljs-type">int</span> index)</span> &#123;
         <span class="hljs-comment">// 终止条件</span>
-        <span class="hljs-keyword">if</span> (path.size() == k) &#123;
-            res.add(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;(path));
+        <span class="hljs-keyword">if</span> (list.size() == k) &#123;
+            res.add(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;(list));
             <span class="hljs-keyword">return</span>;
         &#125;
 
         <span class="hljs-comment">// 循环</span>
         <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i=index; i&lt;=n; i++) &#123;
-            path.add(i);
+            list.add(i);
             <span class="hljs-comment">// 回溯</span>
             backTracking(n, k, i+<span class="hljs-number">1</span>);
-            path.remove(path.size()-<span class="hljs-number">1</span>);
+            list.remove(list.size()-<span class="hljs-number">1</span>);
         &#125;
     &#125;
 &#125;</code></pre></div>
 
 <h3 id="剪枝优化"><a href="#剪枝优化" class="headerlink" title="剪枝优化"></a>剪枝优化</h3><p>当我们<u>剩余可以取的元素已经小于我们需要取的元素时</u>，就可以跳出循环了<br>优化过程：</p>
 <ol>
-<li>已经选择的元素个数：<code>path.size();</code></li>
-<li>还需要的元素个数为: <code>k - path.size();</code></li>
-<li>在集合n中至多要从该起始位置 : <code>n - (k - path.size()) + 1</code>，开始遍历</li>
+<li>已经选择的元素个数：<code>list.size();</code></li>
+<li>还需要的元素个数为: <code>k - list.size();</code></li>
+<li>在集合n中至多要从该起始位置 : <code>n - (k - list.size()) + 1</code>，开始遍历</li>
 </ol>
 <div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">class</span> <span class="hljs-title class_">Solution</span> &#123;
     <span class="hljs-keyword">public</span> List&lt;List&lt;Integer&gt;&gt; res = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
-    <span class="hljs-keyword">public</span> List&lt;Integer&gt; path = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+    <span class="hljs-keyword">public</span> List&lt;Integer&gt; list = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
 
     <span class="hljs-keyword">public</span> List&lt;List&lt;Integer&gt;&gt; <span class="hljs-title function_">combine</span><span class="hljs-params">(<span class="hljs-type">int</span> n, <span class="hljs-type">int</span> k)</span> &#123;
         backTracking(n, k, <span class="hljs-number">1</span>);
@@ -425,17 +425,17 @@
 
     <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">backTracking</span><span class="hljs-params">(<span class="hljs-type">int</span> n, <span class="hljs-type">int</span> k, <span class="hljs-type">int</span> index)</span> &#123;
         <span class="hljs-comment">// 终止条件</span>
-        <span class="hljs-keyword">if</span> (path.size() == k) &#123;
-            res.add(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;(path));
+        <span class="hljs-keyword">if</span> (list.size() == k) &#123;
+            res.add(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;(list));
             <span class="hljs-keyword">return</span>;
         &#125;
 
         <span class="hljs-comment">// 循环</span>
-        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i=index; i&lt;=n-(k-path.size())+<span class="hljs-number">1</span>; i++) &#123;
-            path.add(i);
+        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i=index; i&lt;=n-(k-list.size())+<span class="hljs-number">1</span>; i++) &#123;
+            list.add(i);
             <span class="hljs-comment">// 回溯</span>
             backTracking(n, k, i+<span class="hljs-number">1</span>);
-            path.remove(path.size()-<span class="hljs-number">1</span>);
+            list.remove(list.size()-<span class="hljs-number">1</span>);
         &#125;
     &#125;
 &#125;</code></pre></div>
@@ -682,6 +682,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/04/12/%E5%9B%9E%E6%BA%AF%E4%B8%AA%E4%BA%BA%E6%80%BB%E7%BB%93%EF%BC%9A%E5%88%87%E5%89%B2%E9%97%AE%E9%A2%98/" title="回溯个人总结：切割问题">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">回溯个人总结：切割问题</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
