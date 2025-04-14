@@ -26,14 +26,17 @@
 <meta property="og:site_name" content="chenchen">
 <meta property="og:description" content="为什么需要序列化？网络传输的数据必须是二进制数据，但调用方请求的出入参数都是对象。对象是不能直接在网络中传输的，所以我们需要提前把它转成可传输的二进制，并且要求转换算法是可逆的，这个过程我们一般叫做 “序列化”。 这时，服务提供方就可以正确地从二进制数据中分割出不同的请求，同时根据请求类型和序列化类型，把二进制的消息体逆向还原成请求对象，这个过程我们称之为“反序列化”。  有哪些常用的序列化？JD">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/RPC%E5%BA%8F%E5%88%97%E5%8C%96-%E5%AF%B9%E8%B1%A1%E6%80%8E%E4%B9%88%E5%9C%A8%E7%BD%91%E7%BB%9C%E4%B8%AD%E4%BC%A0%E8%BE%93%EF%BC%9F/874e268032d6995be27c0596a6610a48.png">
+<meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/8032d6995be27c0596a6610a48.png">
+<meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/20250414153845896.png">
+<meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/389acb1ef04e56f8ea9e7bcb5c.png">
+<meta property="og:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/6693e26e72600ae4e4b49fb9b5.png">
 <meta property="article:published_time" content="2025-04-13T08:38:16.000Z">
-<meta property="article:modified_time" content="2025-04-13T08:42:57.986Z">
+<meta property="article:modified_time" content="2025-04-14T08:37:30.663Z">
 <meta property="article:author" content="尘尘">
 <meta property="article:tag" content="网络通信">
 <meta property="article:tag" content="RPC">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/RPC%E5%BA%8F%E5%88%97%E5%8C%96-%E5%AF%B9%E8%B1%A1%E6%80%8E%E4%B9%88%E5%9C%A8%E7%BD%91%E7%BB%9C%E4%B8%AD%E4%BC%A0%E8%BE%93%EF%BC%9F/874e268032d6995be27c0596a6610a48.png">
+<meta name="twitter:image" content="http://example.com/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/8032d6995be27c0596a6610a48.png">
   
   
   
@@ -226,7 +229,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          183 字
+          2.1k 字
         
       </span>
     
@@ -237,7 +240,7 @@
         
         
         
-          2 分钟
+          18 分钟
         
       </span>
     
@@ -280,8 +283,186 @@
               <div class="markdown-body">
                 
                 <h1 id="为什么需要序列化？"><a href="#为什么需要序列化？" class="headerlink" title="为什么需要序列化？"></a>为什么需要序列化？</h1><p>网络传输的数据必须是二进制数据，但调用方请求的出入参数都是对象。对象是不能直接在网络中传输的，所以我们需要提前把它<u>转成可传输的二进制</u>，并且<u>要求转换算法是可逆的</u>，这个过程我们一般叫做 <strong>“序列化”</strong>。 这时，服务提供方就可以正确地从二进制数据中分割出不同的请求，同时根据请求类型和序列化类型，把二进制的消息体逆向还原成请求对象，这个过程我们称之为“反序列化”。</p>
-<p><img src="/RPC%E5%BA%8F%E5%88%97%E5%8C%96-%E5%AF%B9%E8%B1%A1%E6%80%8E%E4%B9%88%E5%9C%A8%E7%BD%91%E7%BB%9C%E4%B8%AD%E4%BC%A0%E8%BE%93%EF%BC%9F/874e268032d6995be27c0596a6610a48.png" srcset="/img/loading.gif" lazyload alt="序列化与反序列化"></p>
-<h1 id="有哪些常用的序列化？"><a href="#有哪些常用的序列化？" class="headerlink" title="有哪些常用的序列化？"></a>有哪些常用的序列化？</h1><h2 id="JDK原生序列化"><a href="#JDK原生序列化" class="headerlink" title="JDK原生序列化"></a>JDK原生序列化</h2>
+<p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/8032d6995be27c0596a6610a48.png" srcset="/img/loading.gif" lazyload alt="序列化与反序列化"></p>
+<h1 id="有哪些常用的序列化？"><a href="#有哪些常用的序列化？" class="headerlink" title="有哪些常用的序列化？"></a>有哪些常用的序列化？</h1><h2 id="JDK原生序列化"><a href="#JDK原生序列化" class="headerlink" title="JDK原生序列化"></a>JDK原生序列化</h2><ul>
+<li>序列化的具体实现：ObjectOutputStream</li>
+<li>反序列化的具体实现：ObjectInputStream</li>
+</ul>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Student</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Serializable</span> &#123;
+    <span class="hljs-comment">// 学号</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-type">int</span> no;
+    <span class="hljs-comment">// 姓名</span>
+    <span class="hljs-keyword">private</span> String name;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-type">int</span> <span class="hljs-title function_">getNo</span><span class="hljs-params">()</span> &#123;
+        <span class="hljs-keyword">return</span> no;
+    &#125;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">setNo</span><span class="hljs-params">(<span class="hljs-type">int</span> no)</span> &#123;
+        <span class="hljs-built_in">this</span>.no = no;
+    &#125;
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getName</span><span class="hljs-params">()</span> &#123;
+        <span class="hljs-keyword">return</span> name;
+    &#125;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">setName</span><span class="hljs-params">(String name)</span> &#123;
+        <span class="hljs-built_in">this</span>.name = name;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">toString</span><span class="hljs-params">()</span> &#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Student&#123;&quot;</span> +
+                <span class="hljs-string">&quot;no=&quot;</span> + no +
+                <span class="hljs-string">&quot;, name=&#x27;&quot;</span> + name + <span class="hljs-string">&#x27;\&#x27;&#x27;</span> +
+                <span class="hljs-string">&#x27;&#125;&#x27;</span>;
+    &#125;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception &#123;
+        <span class="hljs-comment">// 获取系统属性：C:\Users\VGB</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">home</span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">&quot;user.home&quot;</span>);
+        <span class="hljs-type">String</span> <span class="hljs-variable">basePath</span> <span class="hljs-operator">=</span> home + <span class="hljs-string">&quot;/Desktop&quot;</span>;
+        <span class="hljs-comment">// 文件输出流</span>
+        <span class="hljs-type">FileOutputStream</span> <span class="hljs-variable">fos</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">FileOutputStream</span>(basePath + <span class="hljs-string">&quot;student.dat&quot;</span>);
+        <span class="hljs-type">Student</span> <span class="hljs-variable">student</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Student</span>();
+        student.setNo(<span class="hljs-number">100</span>);
+        student.setName(<span class="hljs-string">&quot;TEST_STUDENT&quot;</span>);
+        <span class="hljs-comment">// 对象输出流</span>
+        <span class="hljs-type">ObjectOutputStream</span> <span class="hljs-variable">oos</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ObjectOutputStream</span>(fos);
+        oos.writeObject(student);
+        oos.flush();
+        oos.close();
+        
+        <span class="hljs-comment">// 文件输入流</span>
+        <span class="hljs-type">FileInputStream</span> <span class="hljs-variable">fis</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">FileInputStream</span>(basePath + <span class="hljs-string">&quot;student.dat&quot;</span>);
+        <span class="hljs-comment">// 对象输入流</span>
+        <span class="hljs-type">ObjectInputStream</span> <span class="hljs-variable">ois</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ObjectInputStream</span>(fis);
+        <span class="hljs-comment">// 读对象，获取</span>
+        <span class="hljs-type">Student</span> <span class="hljs-variable">deStudent</span> <span class="hljs-operator">=</span> (Student) ois.readObject();
+        ois.close();
+
+        System.out.println(deStudent);
+    &#125;
+&#125;</code></pre></div>
+
+<p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/20250414153845896.png" srcset="/img/loading.gif" lazyload></p>
+<p>JDK的序列化过程：</p>
+<p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/389acb1ef04e56f8ea9e7bcb5c.png" srcset="/img/loading.gif" lazyload alt="ObjectOutputStream序列化过程图"></p>
+<p>序列化过程就是在读取对象数据的时候，不断<u>加入一些特殊分隔符</u>，这些特殊分隔符<u>用于在反序列化过程中截断用</u>。</p>
+<ol>
+<li>头部数据：声明<strong>序列化协议</strong>、<strong>序列化版本</strong>，用于高低版本向后兼容</li>
+<li>对象数据主要包括：<strong>类名</strong>、<strong>签名</strong>、<strong>属性名</strong>、<strong>属性类型</strong>及<strong>属性值</strong>，当然还有开头结尾等数据，除了属性值属于真正的对象值，其他都是为了反序列化用的元数据</li>
+<li>存在对象引用、继承的情况下，就是递归遍历“写对象”逻辑</li>
+</ol>
+<p>实际上任何一种序列化框架，核心思想就是<u>设计一种序列化协议，将对象的类型、属性类型、属性值一一按照固定的格式<strong>写到二进制字节流中</strong>来完成序列化，再按照固定的格式一一读出对象的类型、属性类型、属性值，通过这些信息<strong>重新创建出一个新的对象</strong>，来完成反序列化</u>。</p>
+<h2 id="JSON"><a href="#JSON" class="headerlink" title="JSON"></a>JSON</h2><p>应用广泛，但存在问题：</p>
+<ol>
+<li>进行序列化的<strong>额外空间开销比较大</strong>，对于大数据量服务这意味着需要巨大的内存和磁盘开销</li>
+<li>没有类型，但像 Java 这种强类型语言，需要通过反射统一解决，所以<strong>性能不会太好</strong></li>
+</ol>
+<p>所以如果 RPC 框架选用 JSON 序列化，服务提供者与服务调用者之间传输的<u>数据量要相对较小</u>，否则将严重影响性能。</p>
+<h2 id="Hessian"><a href="#Hessian" class="headerlink" title="Hessian"></a>Hessian</h2><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-type">Student</span> <span class="hljs-variable">student</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Student</span>();
+student.setNo(<span class="hljs-number">101</span>);
+student.setName(<span class="hljs-string">&quot;HESSIAN&quot;</span>);
+
+<span class="hljs-comment">// 把student对象转化为byte数组</span>
+<span class="hljs-type">ByteArrayOutputStream</span> <span class="hljs-variable">bos</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ByteArrayOutputStream</span>();
+<span class="hljs-type">Hessian2Output</span> <span class="hljs-variable">output</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Hessian2Output</span>(bos);
+output.writeObject(student);
+output.flushBuffer();
+<span class="hljs-type">byte</span>[] data = bos.toByteArray();
+bos.close();
+
+<span class="hljs-comment">// 把刚才序列化出来的byte数组转化为student对象</span>
+<span class="hljs-type">ByteArrayInputStream</span> <span class="hljs-variable">bis</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ByteArrayInputStream</span>(data);
+<span class="hljs-type">Hessian2Input</span> <span class="hljs-variable">input</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Hessian2Input</span>(bis);
+<span class="hljs-type">Student</span> <span class="hljs-variable">deStudent</span> <span class="hljs-operator">=</span> (Student) input.readObject();
+input.close();
+
+System.out.println(deStudent);</code></pre></div>
+
+<p>优点：</p>
+<ul>
+<li>动态类型、二进制、紧凑的</li>
+<li>可跨语言移植的（兼容性、稳定性）</li>
+<li>比 JDK、JSON 更加紧凑，性能上比 JDK、JSON 序列化高效很多，生成的字节数也更小</li>
+</ul>
+<p>问题：官方版本对 Java 里面一些常见对象的类型不支持</p>
+<ol>
+<li>Linked 系列，LinkedHashMap、LinkedHashSet 等，但是可以通过扩展 CollectionDeserializer 类修复</li>
+<li>Locale 类，可以通过扩展 ContextSerializerFactory 类修复</li>
+<li>Byte&#x2F;Short 反序列化的时候变成 Integer</li>
+</ol>
+<h2 id="Protobuf"><a href="#Protobuf" class="headerlink" title="Protobuf"></a>Protobuf</h2><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> * // IDl 文件格式</span>
+<span class="hljs-comment"> * synax = &quot;proto3&quot;;</span>
+<span class="hljs-comment"> * option java_package = &quot;com.test&quot;;</span>
+<span class="hljs-comment"> * option java_outer_classname = &quot;StudentProtobuf&quot;;</span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> * message StudentMsg &#123;</span>
+<span class="hljs-comment"> * //序号</span>
+<span class="hljs-comment"> * int32 no = 1;</span>
+<span class="hljs-comment"> * //姓名</span>
+<span class="hljs-comment"> * string name = 2;</span>
+<span class="hljs-comment"> * &#125;</span>
+<span class="hljs-comment"> * </span>
+<span class="hljs-comment"> */</span>
+ 
+StudentProtobuf.StudentMsg.<span class="hljs-type">Builder</span> <span class="hljs-variable">builder</span> <span class="hljs-operator">=</span> StudentProtobuf.StudentMsg.newBuilder();
+builder.setNo(<span class="hljs-number">103</span>);
+builder.setName(<span class="hljs-string">&quot;protobuf&quot;</span>);
+
+<span class="hljs-comment">//把student对象转化为byte数组</span>
+StudentProtobuf.<span class="hljs-type">StudentMsg</span> <span class="hljs-variable">msg</span> <span class="hljs-operator">=</span> builder.build();
+<span class="hljs-type">byte</span>[] data = msg.toByteArray();
+
+<span class="hljs-comment">//把刚才序列化出来的byte数组转化为student对象</span>
+StudentProtobuf.<span class="hljs-type">StudentMsg</span> <span class="hljs-variable">deStudent</span> <span class="hljs-operator">=</span> StudentProtobuf.StudentMsg.parseFrom(data);
+
+System.out.println(deStudent);</code></pre></div>
+
+<p>优点：</p>
+<ol>
+<li>序列化后体积相比 JSON、Hessian <strong>小</strong>很多</li>
+<li>IDL（Interface description language）能清晰地描述语义，所以足以<strong>帮助并保证应用程序之间的类型不会丢失</strong>，无需类似 XML 解析器</li>
+<li>序列化反序列化<strong>速度很快</strong>，不需要通过反射获取类型</li>
+<li>消息格式升级和<strong>兼容性</strong>不错，可以做到向后兼容</li>
+</ol>
+<p>缺点：</p>
+<ul>
+<li>对于具有反射和动态能力的语言来说，用起来很麻烦，比如Java，这时候可以考虑用Protostuff：<ul>
+<li>Protostuff 不需要依赖 IDL 文件</li>
+<li>可以直接对 Java 领域对象进行（反）序列化操作</li>
+<li>效率上跟 Protobuf 差不多</li>
+<li>生成的二进制格式和 Protobuf 完全相同</li>
+</ul>
+</li>
+</ul>
+<p>Protostuff问题：</p>
+<ol>
+<li>不支持null</li>
+<li>不支持单纯的Map、List集合对象，需要包在对象里</li>
+</ol>
+<h1 id="RPC框架中如何选择序列化？"><a href="#RPC框架中如何选择序列化？" class="headerlink" title="RPC框架中如何选择序列化？"></a>RPC框架中如何选择序列化？</h1><p>考虑因素：</p>
+<ul>
+<li>性能</li>
+<li>效率</li>
+<li>空间开销（序列化后的二进制数据体积大小）</li>
+<li><strong>通用性、兼容性</strong></li>
+<li>安全性</li>
+</ul>
+<p><img src="/2025/04/08/RPC-%E4%BB%80%E4%B9%88%E6%98%AFRPC%EF%BC%9FRPC%E7%9A%84%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84%EF%BC%9F/6693e26e72600ae4e4b49fb9b5.png" srcset="/img/loading.gif" lazyload alt="序列化方式选取考虑因素及优先级"></p>
+<p>综上，我们首选的还是 Hessian 与 Protobuf，因为他们在性能、时间开销、空间开销、通用性、兼容性和安全性上，都满足了我们的要求。</p>
+<p>其中 <u>Hessian 在使用上更加方便，在对象的兼容性上更好；Protobuf 则更加高效，通用性上更有优势。</u></p>
+<h1 id="RPC框架在使用时需要注意哪些问题？"><a href="#RPC框架在使用时需要注意哪些问题？" class="headerlink" title="RPC框架在使用时需要注意哪些问题？"></a>RPC框架在使用时需要注意哪些问题？</h1><p>**对象构造得过于复杂：**属性很多，并且存在多层的嵌套，比如 A 对象关联 B 对象，B 对象又聚合 C 对象，C 对象又关联聚合很多其他对象，对象依赖关系过于复杂。序列化框架在序列化与反序列化对象时，对象越复杂就越浪费性能，消耗 CPU，这会严重影响 RPC 框架整体的性能；另外，对象越复杂，在序列化与反序列化的过程中，出现问题的概率就越高。</p>
+<p>**对象过于庞大：**我经常遇到业务过来咨询，为啥他们的 RPC 请求经常超时，排查后发现他们的入参对象非常得大，比如为一个大 List 或者大 Map，序列化之后字节长度达到了上兆字节。这种情况同样会严重地浪费了性能、CPU，并且序列化一个如此大的对象是很耗费时间的，这肯定会直接影响到请求的耗时。</p>
+<p>**使用序列化框架不支持的类作为入参类：**比如 Hessian 框架，他天然是不支持 LinkHashMap、LinkedHashSet 等，而且大多数情况下最好不要使用第三方集合类，如 Guava 中的集合类，很多开源的序列化框架都是优先支持编程语言原生的对象。因此如果入参是集合类，应尽量选用原生的、最为常用的集合类，如 HashMap、ArrayList。</p>
+<p>**对象有复杂的继承关系：**大多数序列化框架在序列化对象时都会将对象的属性一一进行序列化，当有继承关系时，会不停地寻找父类，遍历属性。就像问题 1 一样，对象关系越复杂，就越浪费性能，同时又很容易出现序列化上的问题。</p>
+<p>在 RPC 框架的使用过程中，我们要<u>尽量构建简单的对象作为入参和返回值对象</u>，避免上述问题。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>对象在网络之间传输、通信，是一定需要序列化的，而序列化的核心思想就是设计一种<strong>序列化协议</strong>，将对象的类型、属性类型、属性值一一按照固定的格式<strong>写到二进制字节流中</strong>来完成序列化，再按照固定的格式一一读出对象的类型、属性类型、属性值，通过这些信息<strong>重新创建出一个新的对象</strong>，来完成反序列化。</p>
+<p>市面上有很多序列化协议，而我们经评估后，序列化框架的<strong>安全性、通用性、兼容性</strong>是我们首要考虑的因素。综合考虑，Hessian 与 Protobuf是我们首选的序列化协议，Hessian的兼容性更好，而Protobuf更加高效，用户根据自己的需求考量进行选择即可。</p>
+
                 
               </div>
             
